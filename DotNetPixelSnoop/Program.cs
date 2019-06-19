@@ -1,31 +1,66 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing.Imaging;
 
 namespace DotNetPixelSnoop
 {
     class Program
     {
+        /// <summary>
+        /// Runs some correctness and performance tests
+        /// for BmpPixelSnoop, see file BmpPixelSnoop.cs for
+        /// the actual bitmap snoop code.
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
-        {
-            TestSnoop();
-        }
-
-        static void TestSnoop()
         {
             int testWidth = 1920;
             int testHeight = 1080;
 
+            // First create a bitmap to test with
+            var bmp = GenerateTestBitmap(testWidth, testHeight);
+
+            try
+            {
+                // Test the BmpPixelSnoop.GetPixel()
+                // works as expected
+                TestGetPixel(bmp);
+
+                // Test the BmpPixelSnoop.SetPixel()
+                // works as expected
+                TestSetPixel(bmp);
+
+                // See how BmpPixelSnoop.GetPixel()'s performance
+                // compares to that of the regular GetPixel()
+                TestGetPixelSpeed(bmp);
+
+                // See how BmpPixelSnoop.SetPixel()'s performance
+                // compares to that of the regular SetPixel()
+                TestSetPixelSpeed(bmp);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Test failed - " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Generates a bitmap that's filled in withe some random
+        /// data that we can use for testing.
+        /// </summary>
+        /// <param name="width">The required width of the new bitmap</param>
+        /// <param name="height">The required height of the new bitmap.</param>
+        /// <returns>The newly created bitmap</returns>
+        static Bitmap GenerateTestBitmap(int width, int height)
+        {
             // Create a bitmap
-            Bitmap bmp = new Bitmap(testWidth, testHeight);
+            var bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
             // Now fill up the Bitmap with some random data
-            // using the bitmap's normal SetPixel() function.
-            Random rand = new Random();
+            // using the bitmap's normal SetPixel() function 
+            //as we know that it works! ;-)
+            var rand = new Random();
 
             for (int j = 0; j != bmp.Height; j++)
             {
@@ -35,170 +70,40 @@ namespace DotNetPixelSnoop
                 }
             }
 
-            TestGetPixel(bmp);
-            TestSetPixel(bmp);
-            TestGetPixelSpeed(bmp);
-
-
-            int sum = 0;
-
-            /////
-
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            int height = bmp.Height;
-            int width = bmp.Width;
-
-            for (int j = 0; j != height; j++)
-            {
-                for (int i = 0; i != width; i++)
-                {
-                    sum += bmp.GetPixel(i, j).R;
-                }
-            }
-
-            Trace.WriteLine(string.Format("M Sum: {0}, took: {1}", sum, stopwatch.ElapsedMilliseconds));
-
-
-            var bmpClone = bmp.Clone() as Bitmap;
-            var snoop = new BmpPixelSnoop(bmpClone);
-            /*
-            // Set using normal
-            stopwatch.Reset();
-            stopwatch.Start();
-
-            for (int j = 0; j != height; j++)
-            {
-                for (int i = 0; i != width; i++)
-                {
-                    bmp.SetPixel(i, j, Color.Red);
-                }
-            }
-
-            Trace.WriteLine(string.Format("Set 0, took: {0}", stopwatch.ElapsedMilliseconds));
-            */
-
-            // blaster
-
-            stopwatch.Reset();
-            stopwatch.Start();
-
- 
-            sum = 0;
-
-            for (int j = 0; j != height; j++)
-            {
-                for (int i = 0; i != width; i++)
-                {
-                    sum += snoop.GetPixel(i, j).R;
-                }
-            }
-
-            Trace.WriteLine(string.Format("B0 Sum: {0}, took: {1}", sum, stopwatch.ElapsedMilliseconds));
-
-            // Using pixel offset
-            // Red channel only
-            stopwatch.Reset();
-            stopwatch.Start();
-
-            sum = 0;
-
-            int size = snoop.Width * snoop.Height;
-            for (int i = 0; i != snoop.Width * snoop.Height; i++)
-            {
-                var col = snoop.GetPixel(i);
-                sum += col.R + col.G + col.B;
-            }
-
-
-            Trace.WriteLine(string.Format("B1 Sum: {0}, took: {1}", sum, stopwatch.ElapsedMilliseconds));
-
-
-
-            // Red channel only
-            stopwatch.Reset();
-            stopwatch.Start();
-
-
-            sum = 0;
-
-
-            for (int j = 0; j != snoop.Height; j++)
-            {
-                for (int i = 0; i != snoop.Width; i++)
-                {
-                    sum += snoop.GetRed(i, j);
-                    sum += snoop.GetGreen(i, j);
-                    sum += snoop.GetBlue(i, j);
-                }
-            }
-
-
-            Trace.WriteLine(string.Format("BR Sum: {0}, took: {1}", sum, stopwatch.ElapsedMilliseconds));
-
-
-            // Red channel only
-            stopwatch.Reset();
-            stopwatch.Start();
-
-
-            sum = 0;
-
-
-            for (int j = 0; j != snoop.Height; j++)
-            {
-                for (int i = 0; i != snoop.Width; i++)
-                {
-                    var col = snoop.NovaGetPixel(i, j);
-                    sum += col.R + col.G + col.B;
-                }
-            }
-
-
-            Trace.WriteLine(string.Format("BN Sum: {0}, took: {1}", sum, stopwatch.ElapsedMilliseconds));
-
-            // Set using blaster
-            stopwatch.Reset();
-            stopwatch.Start();
-
-            sum = 0;
-
-
-            for (int j = 0; j != snoop.Height; j++)
-            {
-                for (int i = 0; i != snoop.Width; i++)
-                {
-                    snoop.SetPixel(i, j, Color.Red);
-                }
-            }
-
-
-            var a = string.Format("Set 1, took: {0}", stopwatch.ElapsedMilliseconds);
-            Trace.WriteLine(a);
+            return bmp;
         }
 
+        /// <summary>
+        /// Test that GetPixel() works the same way as Bitmap.GetPixel()
+        /// </summary>
+        /// <param name="bmp">The bitmap to test with</param>
         static void TestGetPixel(Bitmap bmp)
         {
+            Console.WriteLine("Testing GetPixel()");
+
             // Deep copy the bitmap
             var bmpClone = bmp.Clone() as Bitmap;
 
-            // Now iterate over the bitmap clone and compare each pixel
+            // Now create a snoop over the clone and
+            // iterate over both and compare each pixel
             // 
             using (var snoop = new BmpPixelSnoop(bmpClone))
             { 
-                Console.WriteLine("Testing GetPixel()");
-
+ 
                 for (int j = 0; j != bmp.Height; j++)
                 {
                     for (int i = 0; i != bmp.Width; i++)
                     {
+                        // Normal Butmap.GetPixel()
                         var p1 = bmp.GetPixel(i, j);
+
+                        // BmpPixelSnoop's GetPixel()
                         var p2 = snoop.GetPixel(i, j);
+
+                        // Are they the same (they should be..)
                         if (p1 != p2)
                         {
-                            Console.WriteLine(string.Format("Pixel at ({0}, {1}) does not match!", i, j));
-                            return;
+                            throw new Exception(string.Format("Pixel at ({0}, {1}) does not match!", i, j));
                         }
                     }
                 }
@@ -207,59 +112,90 @@ namespace DotNetPixelSnoop
             Console.WriteLine("GetPixel() OK");
         }
 
-
-
+        /// <summary>
+        /// Test that SetPixel() works the same way as Bitmap.SetPixel()
+        /// </summary>
+        /// <param name="bmp">The bitmap to test with</param>
         static void TestSetPixel(Bitmap bmp)
         {
-            // Deep copy the bitmap
-            var bmpClone = bmp.Clone() as Bitmap;
+            Console.WriteLine("Testing SetPixel()");
 
-            // Now iterate over the bitmap clone and compare each pixel
+            // Create an empty target bitmap
+            var bmpTarget = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format32bppArgb);
+
+            // We get each pixel from the input bitmap and
+            // set to the corresponding pixel in the snooped bitmap.
+            // Then we read back this pixel and check that it equals the 
+            // original pixel value.
             // 
-            using (var snoop = new BmpPixelSnoop(bmpClone))
+            using (var snoop = new BmpPixelSnoop(bmpTarget))
             {
-                Console.WriteLine("Testing SetPixel()");
-
                 for (int j = 0; j != bmp.Height; j++)
                 {
                     for (int i = 0; i != bmp.Width; i++)
                     {
+                        // Get a pixel from the input bitmap
                         var p1 = bmp.GetPixel(i, j);
+
+                        // Set it into the snooped bitmap
                         snoop.SetPixel(i, j, p1);
+
+                        // Read it back from the snooped bitmap
                         var p2 = snoop.GetPixel(i, j);
+
+                        // And compare with original.
                         if (p1 != p2)
                         {
-                            Console.WriteLine(string.Format("Pixel at ({0}, {1}) does not match!", i, j));
-                            return;
+                            throw new Exception(string.Format("Pixel at ({0}, {1}) does not match!", i, j));
                         }
                     }
                 }
 
+            }
 
+            // Now test that the snooped bitmap has been released and
+            // that we can call SetPixel() on it without an excpetion
+            // being thrown...
+            //
+            try
+            {
+                bmpTarget.SetPixel(0, 0, System.Drawing.Color.Aqua);
+            }
+            catch
+            {
+                throw new Exception(string.Format("Could not write to bitmap, BitmapSnoop did not release it!"));
             }
 
             Console.WriteLine("SetPixel() OK");
         }
 
+        /// <summary>
+        /// Test how fast GetPixel() works compared to Bitmap.GetPixel()
+        /// </summary>
+        /// <param name="bmp">The bitmap to test with</param>
         static void TestGetPixelSpeed(Bitmap bmp)
         {
             Console.WriteLine("Testing GetPixel() Speed");
+
             // Deep copy the bitmap
             var bmpClone = bmp.Clone() as Bitmap;
 
-            int height = bmpClone.Height;
-            int width = bmpClone.Width;
-
+            // Calculate a simple sum over all of the pixels
+            // in the original bitmap.
             long sum = 0;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            for (int j = 0; j != height; j++)
+            for (int j = 0; j != bmpClone.Height; j++)
             {
-                for (int i = 0; i != width; i++)
+                for (int i = 0; i != bmpClone.Width; i++)
                 {
-                    sum += bmpClone.GetPixel(i, j).R;
+                    var col = bmpClone.GetPixel(i, j);
+
+                    sum += col.R +
+                            col.G +
+                            col.B;
                 }
             }
 
@@ -270,27 +206,80 @@ namespace DotNetPixelSnoop
 
             long snoopSum = 0;
 
+            // Calculate a simple sum over all of the pixels
+            // in the snooped bitmap.
             using (var snoop = new BmpPixelSnoop(bmpClone))
             {
                 for (int j = 0; j != snoop.Height; j++)
                 {
                     for (int i = 0; i != snoop.Width; i++)
                     {
-                        snoopSum += snoop.GetPixel(i, j).R;
+                        var col = snoop.GetPixel(i, j);
+
+                        snoopSum += col.R +
+                                    col.G +
+                                    col.B;
                     }
                 }
             }
 
             var snoopTime = stopwatch.ElapsedMilliseconds;
 
+            // Just make sure our sums match
             if (sum != snoopSum)
             {
-                Console.WriteLine("Pixel sums don't match!");
-                return;
+                throw new Exception("Pixel sums don't match!");
             }
 
             Console.WriteLine(string.Format("Bitmap.GetPixel() took {0}ms, BmpPixelSnoop.GetPixel() took {1}ms", time, snoopTime));
         }
 
+        /// <summary>
+        /// Test how fast SetPixel() works compared to Bitmap.SetPixel()
+        /// </summary>
+        /// <param name="bmp">The bitmap to test with</param>
+        static void TestSetPixelSpeed(Bitmap bmp)
+        {
+            Console.WriteLine("Testing SetPixel() Speed");
+
+            // Deep copy the bitmap
+            var bmpClone = bmp.Clone() as Bitmap;
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            // Loop through the bitmap and set each pixel's value
+            // to something interesting..
+            for (int j = 0; j != bmpClone.Height; j++)
+            {
+                for (int i = 0; i != bmpClone.Width; i++)
+                {
+                    var col = Color.FromArgb(i % 255, j % 255, (i + j) % 255, (i * j) % 255);
+                    bmpClone.SetPixel(i, j, col);
+                }
+            }
+
+            var time = stopwatch.ElapsedMilliseconds;
+
+            stopwatch.Reset();
+            stopwatch.Start();
+
+            // Now do the same on the snooped bitmap..
+            using (var snoop = new BmpPixelSnoop(bmpClone))
+            {
+                for (int j = 1; j != snoop.Height; j++)
+                {
+                    for (int i = 0; i != snoop.Width; i++)
+                    {
+                        var col = Color.FromArgb(i % 255, j % 255, (i * j) % 255, (i + j) % 255);
+                        snoop.SetPixel(i, j, col);
+                    }
+                }
+            }
+
+            var snoopTime = stopwatch.ElapsedMilliseconds;
+
+            Console.WriteLine(string.Format("Bitmap.SetPixel() took {0}ms, BmpPixelSnoop.SetPixel() took {1}ms", time, snoopTime));
+        }
     }
 }

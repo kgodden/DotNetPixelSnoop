@@ -7,7 +7,7 @@ Include the file BmpPixelSnoop.cs into your project.
 
 And then use BmpPixelSnoop like this:
 
-```
+```csharp
 using (var snoop = new BmpPixelSnoop(theBitmap))
 {
   // Now use the faster GetPixel() and SetPixel(), e.g.

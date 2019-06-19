@@ -23,7 +23,11 @@ using (var snoop = new BmpPixelSnoop(theBitmap))
 }
 ```
 
-*NB* When you are snooping a bitmap, you cannot access the snooped bitmap using the normal functions until the BmpPixelSnoop object goes out of scope, for example when execution leaves the using() block in the code example below.  This is because the bitmap is locked (using LockBits()) when it's being snooped, it is unlocked when the snoop objev=ct is disposed.
+*NB* When you are snooping a bitmap, you cannot access the snooped bitmap using the normal functions until the BmpPixelSnoop object goes out of scope, (e.g. when execution leaves the using() block in the code example above).  This is because the bitmap is locked (using LockBits()) when it's being snooped, it is unlocked when the snoop object is disposed.
 
 
 Tests indcate that snoop's GetPixel() and SetPixel() methods can be 10 times faster than the originals.
+
+This repo contains a visual studio project with the class defined in BmpPixelSnoop.cs and some test code in Program.cs.  To use the class just include BmpPixelSnoop.cs into your project.
+
+The only possible gotcha is that your project must be marked to 'Allow unsafe code' (in its project settings) to use this class! 

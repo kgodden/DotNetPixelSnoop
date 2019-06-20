@@ -55,7 +55,8 @@ namespace DotNetPixelSnoop
         static Bitmap GenerateTestBitmap(int width, int height)
         {
             // Create a bitmap
-            var bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+            // PixelFormat.Format32bppArgb is the default format
+            var bmp = new Bitmap(width, height);
 
             // Now fill up the Bitmap with some random data
             // using the bitmap's normal SetPixel() function 
@@ -121,7 +122,8 @@ namespace DotNetPixelSnoop
             Console.WriteLine("Testing SetPixel()");
 
             // Create an empty target bitmap
-            var bmpTarget = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format32bppArgb);
+            // PixelFormat.Format32bppArgb is the default format
+            var bmpTarget = new Bitmap(bmp.Width, bmp.Height);
 
             // We get each pixel from the input bitmap and
             // set to the corresponding pixel in the snooped bitmap.

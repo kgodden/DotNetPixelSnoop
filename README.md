@@ -31,3 +31,16 @@ Tests indcate that snoop's GetPixel() and SetPixel() methods can be 10 times fas
 This repo contains a visual studio project with the class defined in BmpPixelSnoop.cs and some test code in Program.cs.  To use the class just include BmpPixelSnoop.cs into your project.
 
 The only possible gotcha is that your project must be marked to 'Allow unsafe code' (in its project settings) to use this class! 
+
+Sample output from the test code (in Program.cs):
+
+```
+Testing GetPixel()
+GetPixel() OK
+Testing SetPixel()
+SetPixel() OK
+Testing GetPixel() Speed
+Bitmap.GetPixel() took 759ms, BmpPixelSnoop.GetPixel() took 67ms
+Testing SetPixel() Speed
+Bitmap.SetPixel() took 907ms, BmpPixelSnoop.SetPixel() took 72ms
+```

@@ -57,7 +57,7 @@ unsafe class BmpPixelSnoop : IDisposable
     private readonly int depth;
 
     // Number of bytes in an image row
-    private readonly int rowBytes;
+    private readonly int stride;
 
     // The bitmap's width
     private readonly int width;
@@ -102,10 +102,10 @@ unsafe class BmpPixelSnoop : IDisposable
         // Get pointer to first pixel
         scan0 = (byte*)data.Scan0.ToPointer();
 
-        // Calculate the number of bytes in an image row
+        // Get the number of bytes in an image row
         // this will be used when determining a pixel's
         // memory address.
-        rowBytes = wrappedBitmap.Width * depth;
+        stride = data.Stride;
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ unsafe class BmpPixelSnoop : IDisposable
     /// <returns>A byte* pointer to the pixel's data</returns>
     private byte* PixelPointer(int x, int y)
     {
-        return scan0 + y * rowBytes + x * depth;
+        return scan0 + y * stride + x * depth;
     }
 
     /// <summary>
